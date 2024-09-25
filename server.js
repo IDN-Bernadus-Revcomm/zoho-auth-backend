@@ -108,6 +108,8 @@ app.post('/miitel-webhook', async (req, res) => {
       return res.status(200).header('Content-Type', 'text/plain').send(challenge);
     }
 
+    console.log('Received webhook from MiiTel:', req.body);
+
     if (!call || !call.details || !call.details[0] || !call.details[0].speech_recognition) {
         return res.status(400).json({ error: 'Missing speech recognition data.' });
     }
@@ -116,13 +118,18 @@ app.post('/miitel-webhook', async (req, res) => {
     const speechRecognition = call.details[0].speech_recognition.raw;
     const phoneNumber = call.details[0].from_number;
 
+    console.log('Received speech recognition data:', speechRecognition);
+    console.log('Received phone number:', phoneNumber);
+
     try {
         const ticketId = await findTicketIdByPhoneNumber(phoneNumber);
 
         if (!ticketId) {
+            console.error('No ticket found for the phone number:', phoneNumber);
             return res.status(404).json({ error: 'Ticket not found for the given phone number.' });
         }
 
+        console.log('Updating ticket with ID:', ticketId);
         const updateResult = await updateZohoTicket(ticketId, speechRecognition);
 
         if (updateResult.success) {
