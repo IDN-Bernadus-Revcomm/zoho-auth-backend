@@ -1,7 +1,13 @@
-import fetch from 'node-fetch';
+import cors from 'cors'; // Import the CORS middleware
 import express from 'express';
+import fetch from 'node-fetch';
 
 const app = express();
+
+// Enable CORS for your frontend (Vercel URL)
+app.use(cors({
+    origin: 'https://miitel-mg-group.vercel.app', // Allow only this origin
+}));
 
 // To handle JSON request bodies
 app.use(express.json());
