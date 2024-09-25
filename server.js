@@ -4,6 +4,9 @@ import fetch from 'node-fetch';
 
 const app = express();
 
+let accessToken = null;
+let tokenExpirationTime = null;
+
 // Enable CORS for your frontend (Vercel URL)
 app.use(cors({
     origin: 'https://miitel-mg-group.vercel.app', // Allow only this origin
@@ -38,6 +41,10 @@ app.post('/get-access-token', async (req, res) => {
     const data = await response.json();
 
     if (data.access_token) {
+
+        accessToken = data.access_token;
+        tokenExpirationTime = Date.now() + (data.expires_in * 1000);
+
         // Send the access token to the frontend
         res.json({ accessToken: data.access_token });
     } else {
@@ -52,8 +59,8 @@ app.post('/create-ticket', async (req, res) => {
     const phoneNumber = req.body.phoneNumber;
 
     // Check if required data is provided
-    if (!accessToken || !phoneNumber) {
-        return res.status(400).json({ error: 'Access token and phone number are required.' });
+    if (!isAccessTokenValid()) {
+        return res.status(401).json({ error: 'Access token is expired or missing. Please reauthorize.' });
     }
 
     // Prepare the ticket payload
@@ -90,6 +97,106 @@ app.post('/create-ticket', async (req, res) => {
         res.status(500).json({ error: 'Failed to create ticket', details: error });
     }
 });
+
+app.post('/miitel-webhook', async (req, res) => {
+    const challenge = req.body.challenge; // Extract the challenge token
+    const { call } = req.body;
+  
+    // Check if challenge exists
+    if (challenge) {
+      // Return the challenge as plain text with correct headers
+      return res.status(200).header('Content-Type', 'text/plain').send(challenge);
+    }
+
+    if (!call || !call.details || !call.details[0] || !call.details[0].speech_recognition) {
+        return res.status(400).json({ error: 'Missing speech recognition data.' });
+    }
+
+    // Extract transcription and phone number
+    const speechRecognition = call.details[0].speech_recognition.raw;
+    const phoneNumber = call.details[0].from_number;
+
+    try {
+        const ticketId = await findTicketIdByPhoneNumber(phoneNumber);
+
+        if (!ticketId) {
+            return res.status(404).json({ error: 'Ticket not found for the given phone number.' });
+        }
+
+        const updateResult = await updateZohoTicket(ticketId, speechRecognition);
+
+        if (updateResult.success) {
+            res.status(200).json({ message: 'Ticket updated successfully with speech recognition data' });
+        } else {
+            res.status(500).json({ error: 'Failed to update ticket', details: updateResult.details });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error handling webhook', details: error });
+    }
+  });
+
+
+  async function findTicketIdByPhoneNumber(phoneNumber) {
+       try {
+        const response = await fetch(`https://desk.zoho.com/api/v1/tickets/search?phone=${phoneNumber}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Zoho-oauthtoken ' + accessToken,
+                'orgId': '865953007',  
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.data && data.data.length > 0) {
+            return data.data[0].id;  // Return the first ticket found
+        } else {
+            return null;  // No ticket found for this phone number
+        }
+    } catch (error) {
+        console.error("Error searching ticket by phone number:", error);
+        return null;
+    }
+}
+
+async function updateZohoTicket(ticketId, transcription) {
+    const updatePayload = {
+        "status": "Open",  // Keep the ticket open or change status as needed
+        "description": `Transcription:\n${transcription}`  // Append the transcription data
+    };
+
+    try {
+        const response = await fetch(`https://desk.zoho.com/api/v1/tickets/${ticketId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': 'Zoho-oauthtoken ' + accessToken,
+                'orgId': '865953007',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatePayload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            return { success: true, details: data };
+        } else {
+            return { success: false, details: data };
+        }
+    } catch (error) {
+        console.error("Error updating Zoho Desk ticket:", error);
+        return { success: false, details: error };
+    }
+}
+
+function isAccessTokenValid() {
+    if (!accessToken || Date.now() >= tokenExpirationTime) {
+        console.error("Access token is missing or expired");
+        return false;
+    }
+    return true;
+}
 
 // Start the server
 app.listen(3000, () => {
