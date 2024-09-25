@@ -46,6 +46,51 @@ app.post('/get-access-token', async (req, res) => {
     }
 });
 
+// Route to create a ticket in Zoho Desk
+app.post('/create-ticket', async (req, res) => {
+    const accessToken = req.body.accessToken;
+    const phoneNumber = req.body.phoneNumber;
+
+    // Check if required data is provided
+    if (!accessToken || !phoneNumber) {
+        return res.status(400).json({ error: 'Access token and phone number are required.' });
+    }
+
+    // Prepare the ticket payload
+    const ticketPayload = {
+        subject: `Ticket from Phone Number: ${phoneNumber}`,
+        contactId: "1040287000000287180",  // Replace with your actual contact ID
+        departmentId: "1040287000000006907",  // Replace with your actual department ID
+        description: `Ticket created for phone number: ${phoneNumber}`,
+        priority: "High",
+        status: "Open",
+        channel: "Phone",
+        phone: phoneNumber,
+        dueDate: new Date().toISOString()  // Set the due date dynamically
+    };
+
+    try {
+        const response = await fetch('https://desk.zoho.com/api/v1/tickets', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Zoho-oauthtoken ' + accessToken,
+                'orgId': '865953007',  // Your Zoho organization ID
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(ticketPayload)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            res.json(data);
+        } else {
+            res.status(response.status).json({ error: 'Failed to create ticket', details: data });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create ticket', details: error });
+    }
+});
+
 // Start the server
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
