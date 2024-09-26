@@ -60,9 +60,9 @@ app.post('/create-ticket', async (req, res) => {
     //const phoneNumber = req.body.phoneNumber;
 
     // Check if required data is provided
-    if (!isAccessTokenValid()) {
+    /*if (!isAccessTokenValid()) {
         return res.status(401).json({ error: 'Access token is expired or missing. Please reauthorize.' });
-    }
+    }*/
 
     // Prepare the ticket payload
     const ticketPayload = {
