@@ -116,7 +116,7 @@ app.post('/miitel-webhook', async (req, res) => {
 
     // Extract transcription and phone number
     const speechRecognition = call.details[0].speech_recognition.raw;
-    const phoneNumber = call.details[0].from_number;
+    const phoneNumber = '18889009646';
 
     console.log('Received speech recognition data:', speechRecognition);
     console.log('Received phone number:', phoneNumber);
