@@ -59,6 +59,8 @@ app.post('/create-ticket', async (req, res) => {
     //const sequenceId = req.body.sequenceId;
     const phoneNumber = req.body.phoneNumber;
 
+    console.log(accessToken);
+
     // Check if required data is provided
     if (!isAccessTokenValid()) {
         return res.status(401).json({ error: 'Access token is expired or missing. Please reauthorize.' });
@@ -71,7 +73,7 @@ app.post('/create-ticket', async (req, res) => {
         contactId: "1040287000000287180",  
         departmentId: "1040287000000006907",  
         description: `Ticket created for phone number: ${phoneNumber}`,
-        description: `Ticket created for sequence ID: ${sequenceId}`,
+        //description: `Ticket created for sequence ID: ${sequenceId}`,
         priority: "High",
         status: "Open",
         channel: "Phone",
