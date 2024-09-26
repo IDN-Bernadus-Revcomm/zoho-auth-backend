@@ -56,7 +56,8 @@ app.post('/get-access-token', async (req, res) => {
 // Route to create a ticket in Zoho Desk
 app.post('/create-ticket', async (req, res) => {
     const accessToken = req.body.accessToken;
-    const phoneNumber = req.body.phoneNumber;
+    const sequenceId = req.body.sequenceId;
+    //const phoneNumber = req.body.phoneNumber;
 
     // Check if required data is provided
     if (!isAccessTokenValid()) {
@@ -65,10 +66,11 @@ app.post('/create-ticket', async (req, res) => {
 
     // Prepare the ticket payload
     const ticketPayload = {
-        subject: `Ticket from Phone Number: ${phoneNumber}`,
-        contactId: "1040287000000287180",  // Replace with your actual contact ID
-        departmentId: "1040287000000006907",  // Replace with your actual department ID
-        description: `Ticket created for phone number: ${phoneNumber}`,
+        subject: '${sequenceId}',
+        contactId: "1040287000000287180",  
+        departmentId: "1040287000000006907",  
+        //description: `Ticket created for phone number: ${phoneNumber}`,
+        description: `Ticket created for sequence ID: ${sequenceId}`,
         priority: "High",
         status: "Open",
         channel: "Phone",
@@ -116,21 +118,28 @@ app.post('/miitel-webhook', async (req, res) => {
 
     // Extract transcription and phone number
     const speechRecognition = call.details[0].speech_recognition.raw;
-    const phoneNumber = '18889009646';
+    //const phoneNumber = '18889009646';
+    const sequenceId = call.details[0].sequenceId;
 
     console.log('Received speech recognition data:', speechRecognition);
-    console.log('Received phone number:', phoneNumber);
+    console.log('Received sequence id:', sequenceId);
 
     try {
-        const ticketId = await findTicketIdByPhoneNumber(phoneNumber);
+        //const ticketId = await findTicketIdByPhoneNumber(phoneNumber);
+        const tickets = await fetchAllTickets();
+        const ticket = tickets.find(ticket => ticket.subject.includes(sequenceId));
 
-        if (!ticketId) {
+        /*if (!ticketId) {
             console.error('No ticket found for the phone number:', phoneNumber);
             return res.status(404).json({ error: 'Ticket not found for the given phone number.' });
+        }*/
+
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found for the given sequence ID.' });
         }
 
-        console.log('Updating ticket with ID:', ticketId);
-        const updateResult = await updateZohoTicket(ticketId, speechRecognition);
+        console.log('Updating ticket with ID:', ticket.ticketNumber);
+        const updateResult = await updateZohoTicket(ticket.ticketNumber, speechRecognition);
 
         if (updateResult.success) {
             res.status(200).json({ message: 'Ticket updated successfully with speech recognition data' });
@@ -142,10 +151,28 @@ app.post('/miitel-webhook', async (req, res) => {
     }
   });
 
+  async function fetchAllTickets() {
+    try {
+        const response = await fetch('https://desk.zoho.com/api/v1/tickets?include=contacts,assignee,departments,team,isRead', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Zoho-oauthtoken ' + accessToken,
+                'orgId': '865953007',  
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        return data.data || []; // Return the array of tickets
+    } catch (error) {
+        console.error("Error fetching tickets:", error);
+        throw error;
+    }
+}
 
   async function findTicketIdByPhoneNumber(phoneNumber) {
        try {
-        const response = await fetch(`https://desk.zoho.com/api/v1/tickets/search?phone=${phoneNumber}`, {
+        const response = await fetch(`https://desk.zoho.com/api/v1/tickets/${phoneNumber}`, {
             method: 'GET',
             headers: {
                 'Authorization': 'Zoho-oauthtoken ' + accessToken,
