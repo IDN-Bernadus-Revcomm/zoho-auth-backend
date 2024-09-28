@@ -68,7 +68,7 @@ app.post('/create-ticket', async (req, res) => {
 
     // Prepare the ticket payload
     const ticketPayload = {
-        subject: '${sequenceId}',
+        subject: `${sequenceId}`,
         //subject: `Ticket from Phone Number: ${phoneNumber}`,
         contactId: "1040287000000287180",  
         departmentId: "1040287000000006907",  
