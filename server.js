@@ -223,6 +223,7 @@ async function updateZohoTicket(ticketId, transcription) {
             return { success: false, details: data };
         }
     } catch (error) {
+        console.log('Error updating Zoho Desk ticket:', error);
         console.error("Error updating Zoho Desk ticket:", error);
         return { success: false, details: error };
     }
