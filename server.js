@@ -31,8 +31,10 @@ app.post('/get-access-token', async (req, res) => {
         },
         body: new URLSearchParams({
             grant_type: 'authorization_code',
-            client_id: '1000.ZF5QQB9I65ZZEA7J9URGH7S5X4ZF1I', // Replace with your client ID from Zoho Developer Console
-            client_secret: 'e6d43231dba33a2614f48502cd544e425323962281', // Replace with your client secret from Zoho Developer Console
+            //client_id: '1000.ZF5QQB9I65ZZEA7J9URGH7S5X4ZF1I', // Replace with your client ID from Zoho Developer Console
+            //client_secret: 'e6d43231dba33a2614f48502cd544e425323962281', // Replace with your client secret from Zoho Developer Console
+            client_id: '1000.5WVO4MUHBV1RQD6QX5TG5CVVO1ZH2J', // Replace with your client ID from Zoho Developer Console
+            client_secret: '9948bae1adb292395dd9f0583bd085ef66f7589371', // Replace with your client secret from Zoho Developer Console
             redirect_uri: 'https://miitel-mg-group.vercel.app/redirect.html', // Must match the redirect URI you set in Zoho
             code: authCode // The authorization code received from Zoho
         })
@@ -63,9 +65,10 @@ app.post('/create-ticket', async (req, res) => {
     console.log("Data for Ticket:", req.body);
 
     // Check if required data is provided
-    if (!isAccessTokenValid()) {
+    /*if (!isAccessTokenValid()) {
+        console.log("Access token is expired or missing. Please reauthorize.");
         return res.status(401).json({ error: 'Access token is expired or missing. Please reauthorize.' });
-    }
+    }*/
 
     // Prepare the ticket payload
     const ticketPayload = {
