@@ -59,7 +59,8 @@ app.post('/create-ticket', async (req, res) => {
     const sequenceId = req.body.sequenceId;
     const phoneNumber = req.body.phoneNumber;
 
-    console.log(accessToken);
+    console.log("Token to create ticket:", accessToken);
+    console.log("Data for Ticket:", req.body);
 
     // Check if required data is provided
     if (!isAccessTokenValid()) {
@@ -100,6 +101,7 @@ app.post('/create-ticket', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: 'Failed to create ticket', details: error });
+        console.log('Failed to create ticket', error );
     }
 });
 
